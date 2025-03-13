@@ -66,8 +66,8 @@ abstract class SystemBusClient {
         responsePort: responsePort.sendPort,
       );
 
-      BusLogger.tracePacket(logger, 'SENDING', packet.toMap());
-      _busPort.send(packet.toMap());
+      BusLogger.tracePacket(logger, 'SENDING', packet);
+      _busPort.send(packet);
 
       // Wait for response with timeout
       logger
@@ -84,18 +84,18 @@ abstract class SystemBusClient {
 
       BusLogger.tracePacket(logger, 'RECEIVED', response, detail: 'Response');
 
-      // The response is already a properly formatted packet
-      if (response['isResponse'] != true) {
+      // The response is a BusPacket
+      if (!response.isResponse) {
         logger.warning('Received non-response packet');
         throw BusException('Received non-response packet', verb, uri);
       }
 
-      if (response['success'] == true) {
+      if (response.success) {
         logger.fine('Request succeeded');
-        return response['result'];
+        return response.result;
       } else {
         final errorMsg =
-            (response['errorMessage'] ?? 'Operation failed').toString();
+            (response.errorMessage ?? 'Operation failed').toString();
         logger.warning('Request failed: $errorMsg');
         throw BusException(errorMsg, verb, uri);
       }

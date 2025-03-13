@@ -54,8 +54,8 @@ class BusPacket {
         responsePort = null,
         isResponse = true;
 
-  /// Converts this packet to a map for serialization.
-  Map<String, dynamic> toMap() {
+  @override
+  String toString() {
     return {
       'version': version,
       'verbType': verb.runtimeType.toString(),
@@ -67,44 +67,6 @@ class BusPacket {
       'success': success,
       if (result != null) 'result': result,
       if (errorMessage != null) 'errorMessage': errorMessage,
-    };
-  }
-
-  /// Creates a packet from a serialized map.
-  ///
-  /// [enumValues] should contain all possible enum values that could be used
-  /// in the packets being deserialized.
-  static BusPacket fromMap(
-    Map<String, dynamic> map,
-    List<Enum> enumValues,
-  ) {
-    // Find the enum value by name
-    final verbName = map['verbValue'];
-    final verbType = map['verbType'];
-
-    final verb = enumValues.firstWhere(
-      (e) => e.name == verbName && e.runtimeType.toString() == verbType,
-      orElse: () =>
-          throw ArgumentError('Unknown verb: $verbName of type $verbType'),
-    );
-
-    if (map['isResponse'] == true) {
-      return BusPacket.response(
-        request: BusPacket(
-          verb: verb,
-          uri: Uri.parse(map['uri']),
-        ),
-        success: map['success'],
-        result: map['result'],
-        errorMessage: map['errorMessage'],
-      );
-    } else {
-      return BusPacket(
-        verb: verb,
-        uri: Uri.parse(map['uri']),
-        payload: map['payload'],
-        responsePort: map['responsePort'],
-      );
-    }
+    }.toString();
   }
 }

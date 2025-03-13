@@ -4,6 +4,7 @@
 
 ### Changed
 - Bumped minor version for new development cycle
+- Removed unnecessary packet serialization, now passing BusPacket objects directly between isolates
 
 ## 0.1.0 - Initial Release
 

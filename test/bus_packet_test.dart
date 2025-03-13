@@ -53,53 +53,6 @@ void main() {
       expect(response.errorMessage, isNull);
     });
 
-    test('BusPacket serialization and deserialization works correctly', () {
-      final uri = Uri.parse('bus://test.host:123/path');
-      final payload = {'key': 'value'};
-
-      final packet = BusPacket(
-        verb: HttpVerb.post,
-        uri: uri,
-        payload: payload,
-      );
-
-      final map = packet.toMap();
-      final deserializedPacket = BusPacket.fromMap(map, HttpVerb.values);
-
-      expect(deserializedPacket.version, equals(packet.version));
-      expect(deserializedPacket.verb, equals(packet.verb));
-      expect(deserializedPacket.uri.toString(), equals(packet.uri.toString()));
-      expect(deserializedPacket.payload, equals(packet.payload));
-      expect(deserializedPacket.isResponse, equals(packet.isResponse));
-      expect(deserializedPacket.success, equals(packet.success));
-    });
-
-    test('BusPacket response serialization and deserialization works correctly',
-        () {
-      final uri = Uri.parse('bus://test.host:123/path');
-      final request = BusPacket(
-        verb: HttpVerb.get,
-        uri: uri,
-      );
-
-      final response = BusPacket.response(
-        request: request,
-        success: true,
-        result: {'status': 'ok'},
-      );
-
-      final map = response.toMap();
-      final deserializedResponse = BusPacket.fromMap(map, HttpVerb.values);
-
-      expect(deserializedResponse.version, equals(response.version));
-      expect(deserializedResponse.verb, equals(response.verb));
-      expect(
-          deserializedResponse.uri.toString(), equals(response.uri.toString()));
-      expect(deserializedResponse.isResponse, isTrue);
-      expect(deserializedResponse.success, isTrue);
-      expect(deserializedResponse.result, equals({'status': 'ok'}));
-    });
-
     test('Custom enum verbs are supported', () {
       final uri = Uri.parse('bus://custom.service:123/resource');
       final packet = BusPacket(
@@ -108,33 +61,12 @@ void main() {
         payload: {'custom': 'data'},
       );
 
-      final map = packet.toMap();
-      final deserializedPacket =
-          BusPacket.fromMap(map, [...HttpVerb.values, ...CustomVerb.values]);
-
-      expect(deserializedPacket.verb, equals(CustomVerb.action2));
-      expect(deserializedPacket.uri.toString(), equals(uri.toString()));
-      expect(deserializedPacket.payload, equals({'custom': 'data'}));
-    });
-
-    test('Throws error when deserializing unknown verb', () {
-      final uri = Uri.parse('bus://test.host:123/path');
-      final packet = BusPacket(
-        verb: UnknownVerb.unknown,
-        uri: uri,
-      );
-
-      final map = packet.toMap();
-
-      expect(
-        () => BusPacket.fromMap(map, HttpVerb.values),
-        throwsArgumentError,
-      );
+      expect(packet.verb, equals(CustomVerb.action2));
+      expect(packet.uri.toString(), equals(uri.toString()));
+      expect(packet.payload, equals({'custom': 'data'}));
     });
   });
 }
 
 // Define a custom enums
 enum CustomVerb { action1, action2, action3 }
-
-enum UnknownVerb { unknown }

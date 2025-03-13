@@ -5,7 +5,6 @@ import 'package:logging/logging.dart';
 
 import 'bus_logger.dart';
 import 'bus_packet.dart';
-import 'http_verb.dart';
 
 /// A lightweight, URI-based message broker for Dart applications.
 class SystemBus {
@@ -18,18 +17,10 @@ class SystemBus {
   /// Map of registered listeners by host and port
   final Map<String, StreamController<BusPacket>> _listeners = {};
 
-  /// List of all supported enum values for deserialization
-  final List<Enum> _supportedVerbs;
-
   /// Creates a new SystemBus instance.
-  ///
-  /// [supportedVerbs] is the list of all enum values that this bus should
-  /// support for deserialization. If not provided, defaults to HttpVerb values.
-  SystemBus({List<Enum>? supportedVerbs})
-      : _supportedVerbs = supportedVerbs ?? HttpVerb.values {
+  SystemBus() {
     _receivePort.listen(_handleMessage);
-    _logger.info(
-        'SystemBus initialized with ${_supportedVerbs.length} supported verbs');
+    _logger.info('SystemBus initialized');
   }
 
   /// Returns the SendPort that peers can use to send messages to this bus.
@@ -56,13 +47,13 @@ class SystemBus {
 
   /// Handles incoming messages and routes them to the appropriate listeners.
   void _handleMessage(dynamic message) {
-    if (message is! Map<String, dynamic>) {
+    if (message is! BusPacket) {
       _logger.warning('Invalid message format: $message');
       return;
     }
 
     try {
-      final packet = BusPacket.fromMap(message, _supportedVerbs);
+      final packet = message;
       final uri = packet.uri;
 
       BusLogger.tracePacket(_logger, 'RECEIVED', packet);

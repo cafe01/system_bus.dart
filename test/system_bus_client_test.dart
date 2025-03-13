@@ -20,7 +20,7 @@ void main() {
     late TestClient client;
 
     setUp(() {
-      bus = SystemBus(supportedVerbs: [...HttpVerb.values, ...TestVerb.values]);
+      bus = SystemBus();
       busSendPort = bus.sendPort;
       client = TestClient(busSendPort);
 
@@ -34,7 +34,7 @@ void main() {
             success: true,
             result: {'echo': packet.payload, 'verb': packet.verb.name},
           );
-          packet.responsePort!.send(response.toMap());
+          packet.responsePort!.send(response);
         }
       });
 
@@ -47,7 +47,7 @@ void main() {
             success: false,
             errorMessage: 'Simulated error',
           );
-          packet.responsePort!.send(response.toMap());
+          packet.responsePort!.send(response);
         }
       });
 
@@ -127,7 +127,7 @@ void main() {
             success: true,
             result: {'method': packet.verb.name, 'path': packet.uri.path},
           );
-          packet.responsePort!.send(response.toMap());
+          packet.responsePort!.send(response);
         }
       });
     });

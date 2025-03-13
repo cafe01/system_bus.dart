@@ -76,7 +76,7 @@ deviceStream.listen((packet) {
         success: true,
         result: {'status': 'online'},
       );
-      packet.responsePort!.send(response.toMap());
+      packet.responsePort!.send(response);
     }
   }
 });
@@ -98,12 +98,12 @@ void sendMessage(SendPort busSendPort) {
     responsePort: responsePort.sendPort,
   );
   
-  busSendPort.send(packet.toMap());
+  busSendPort.send(packet);
   
   // Listen for the response
   responsePort.listen((response) {
-    // The response is already a Map, no need for BusPacket.fromMap
-    print('Got response: ${response['result']}');
+    // The response is a BusPacket
+    print('Got response: ${response.result}');
     responsePort.close();
   });
 }
@@ -211,7 +211,7 @@ final packet = BusPacket(
   payload: {'temperature': 72, 'mode': 'auto'},
 );
 
-busSendPort.send(packet.toMap());
+busSendPort.send(packet);
 ```
 
 ### Creating Custom Protocols
@@ -256,7 +256,7 @@ void setupDeviceHandler(SystemBus bus, String deviceType, int id) {
           success: true,
           result: {'power': 'on', 'mode': 'heating', 'temperature': 72},
         );
-        packet.responsePort!.send(response.toMap());
+        packet.responsePort!.send(response);
       }
     }
     // Handle other verbs...

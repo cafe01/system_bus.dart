@@ -41,7 +41,7 @@ void main() {
         payload: {'key': 'value'},
       );
 
-      bus.sendPort.send(packet.toMap());
+      bus.sendPort.send(packet);
 
       // Wait for the message to be received
       final receivedPacket = await completer.future;
@@ -71,7 +71,7 @@ void main() {
         payload: {'key': 'value'},
       );
 
-      bus.sendPort.send(packet.toMap());
+      bus.sendPort.send(packet);
 
       // Wait a bit to ensure the message is processed
       await Future.delayed(Duration(milliseconds: 100));
@@ -97,7 +97,7 @@ void main() {
         payload: {'key': 'value'},
       );
 
-      bus.sendPort.send(packet.toMap());
+      bus.sendPort.send(packet);
 
       final receivedPacket = await completer.future;
       expect(receivedPacket.uri.host, equals('test.host'));
@@ -125,7 +125,7 @@ void main() {
         payload: {'custom': 'data'},
       );
 
-      customBus.sendPort.send(packet.toMap());
+      customBus.sendPort.send(packet);
 
       // Wait for the message to be received
       final receivedPacket = await completer.future;
