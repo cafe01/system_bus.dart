@@ -1,10 +1,10 @@
 name: system_bus
 description: A lightweight, URI-based message broker for Dart applications.
 version: 0.1.0
-homepage: https://github.com/yourusername/system_bus
+homepage: https://github.com/cafe01/system_bus.dart
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.16.0 <4.0.0'
 
 # Add regular dependencies here.
 dependencies:
