@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+### Changed
+- Bumped minor version for new development cycle
+
 ## 0.1.0 - Initial Release
 
 ### Added
