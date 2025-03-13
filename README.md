@@ -8,9 +8,20 @@ SystemBus provides a clean, flexible way to route messages between different com
 
 Each SystemBus instance acts as a scope for a group of peers, providing message routing without any knowledge of the peers themselves. This peer-agnostic approach makes it suitable for various communication scenarios.
 
+### Design Philosophy
+
+SystemBus is designed to be both peer and protocol agnostic. The bus itself is essentially a packet router that only cares about the `host` and `port` components of the URI for routing messages to the correct listeners. This design allows for:
+
+1. **Custom Protocol Creation**: Create domain-specific protocols by defining custom verb enums and URI patterns
+2. **Flexible Command Structure**: Each "command" is simply a combination of `VERB + URI + PAYLOAD`
+3. **Protocol Independence**: The bus doesn't enforce any specific protocol semantics beyond basic routing
+
+This approach means you can model any kind of communication pattern or domain-specific protocol on top of the basic routing infrastructure, from REST-like APIs to custom device control protocols.
+
 ## Features
 
 - **URI-based addressing**: Route messages using standard URI format (`scheme://host:port/path?query`)
+- **Protocol-agnostic design**: Define custom verbs and semantics for your specific use case
 - **Stream-based API**: Bind listeners to specific URI patterns and receive messages as streams
 - **Direct response channels**: Built-in support for request/response patterns
 - **Lightweight**: Minimal dependencies and overhead
@@ -39,10 +50,10 @@ void main() {
   // Create a bus instance
   final bus = SystemBus();
   
-  // Get the send port to share with peers
+  // Get the send port to share with clients
   final sendPort = bus.sendPort;
   
-  // Pass sendPort to peers as needed
+  // Pass sendPort to clients that need to communicate with this bus
 }
 ```
 
@@ -148,8 +159,50 @@ enum DeviceVerb {
   reboot,
 }
 
-// Create a bus that supports both HTTP and device verbs
-final bus = SystemBus(supportedVerbs: [...HttpVerb.values, ...DeviceVerb.values]);
+// Define verbs for CPU management
+enum CpuVerb {
+  throttle,
+  boost,
+  monitor,
+  sleep,
+}
+
+// Define verbs for CRUD operations
+enum CrudVerb {
+  create,
+  read,
+  update,
+  delete,
+  list,
+  search,
+}
+
+// Define verbs for Git operations
+enum GitVerb {
+  clone,
+  pull,
+  push,
+  commit,
+  checkout,
+  merge,
+}
+
+// Define verbs for LLM operations
+enum LlmVerb {
+  generate,
+  embed,
+  tokenize,
+  classify,
+  summarize,
+}
+
+// Create a bus that supports multiple verb types
+final bus = SystemBus(supportedVerbs: [
+  ...HttpVerb.values,
+  ...DeviceVerb.values,
+  ...CpuVerb.values,
+  // Add other verb enums as needed
+]);
 
 // Send a message with a custom verb
 final packet = BusPacket(
@@ -160,6 +213,58 @@ final packet = BusPacket(
 
 busSendPort.send(packet.toMap());
 ```
+
+### Creating Custom Protocols
+
+Creating a custom protocol with SystemBus is straightforward:
+
+1. **Define a verb enum** that represents the operations in your domain
+2. **Document URI patterns** that your protocol will use (paths, query parameters, etc.)
+3. **Define payload structures** for each verb+URI combination
+4. **Implement handlers** that bind to the appropriate host:port and process the commands
+
+For example, a simple device control protocol might look like:
+
+```dart
+// 1. Define verbs
+enum DeviceVerb { power, setMode, getStatus }
+
+// 2. Document URI patterns
+// bus://device.type:id/[device-name]
+// Examples:
+// - bus://thermostat:1/living-room
+// - bus://light:2/kitchen
+
+// 3. Define payload structures (in documentation or code)
+// DeviceVerb.power: { "state": "on"|"off" }
+// DeviceVerb.setMode: { "mode": string, ...mode-specific-params }
+// DeviceVerb.getStatus: {} (empty payload)
+
+// 4. Implement handler
+void setupDeviceHandler(SystemBus bus, String deviceType, int id) {
+  final stream = bus.bindListener(deviceType, id);
+  
+  stream.listen((packet) {
+    if (packet.verb == DeviceVerb.power) {
+      final state = packet.payload?['state'];
+      // Handle power command...
+    } else if (packet.verb == DeviceVerb.getStatus) {
+      // Return device status...
+      if (packet.responsePort != null) {
+        final response = BusPacket.response(
+          request: packet,
+          success: true,
+          result: {'power': 'on', 'mode': 'heating', 'temperature': 72},
+        );
+        packet.responsePort!.send(response.toMap());
+      }
+    }
+    // Handle other verbs...
+  });
+}
+```
+
+This approach allows you to create clean, domain-specific APIs while leveraging the routing and message passing infrastructure of SystemBus.
 
 ### Configuring Logging
 
