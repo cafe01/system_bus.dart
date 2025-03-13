@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+### Changed
+- Bumped minor version for continued development
+
 ## 0.2.0
 
 ### Changed
