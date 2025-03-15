@@ -1,15 +1,24 @@
 # Changelog
 
+## 0.4.0
+
+### Added
+- Standardized request/response pattern with `sendRequest()` and `sendResponse()` methods
+- Built-in timeout handling for requests
+- Validation for response packets
+- Comprehensive test suite for request/response functionality
+- Documentation and examples for the new methods
+
 ## 0.3.0
 
 ### Changed
 - Bumped minor version for continued development
+- Removed unnecessary packet serialization, now passing BusPacket objects directly between isolates
 
 ## 0.2.0
 
 ### Changed
 - Bumped minor version for new development cycle
-- Removed unnecessary packet serialization, now passing BusPacket objects directly between isolates
 
 ## 0.1.0 - Initial Release
 

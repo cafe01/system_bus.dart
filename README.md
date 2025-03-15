@@ -146,6 +146,57 @@ The client automatically:
 
 This provides a more ergonomic API for common request/response patterns compared to manually creating packets and managing response ports.
 
+### Using Request/Response Methods
+
+SystemBus provides standardized methods for request/response communication:
+
+```dart
+// Client side: Send a request and await response
+try {
+  final result = await bus.sendRequest(
+    verb: HttpVerb.get,
+    uri: Uri.parse('bus://device.type:1/status'),
+    payload: {'detail': true},
+    timeout: Duration(seconds: 10), // Optional timeout
+  );
+  print('Got result: $result');
+} catch (e) {
+  print('Request failed: $e');
+}
+
+// Service side: Handle requests and send responses
+final deviceStream = bus.bindListener('device.type', 1);
+deviceStream.listen((packet) {
+  if (packet.verb == HttpVerb.get && packet.uri.path == '/status') {
+    try {
+      // Process the request
+      final status = getDeviceStatus();
+      
+      // Send a successful response
+      bus.sendResponse(packet, {
+        'status': 'online',
+        'battery': 85,
+        'lastSeen': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      // Send an error response
+      bus.sendResponse(
+        packet,
+        null,
+        success: false,
+        errorMessage: 'Failed to get device status: $e',
+      );
+    }
+  }
+});
+```
+
+Benefits of using these methods:
+- Standardized error handling
+- Built-in timeout management
+- Automatic validation of response channels
+- Clear, expressive API for request/response patterns
+
 ### Custom Protocol Verbs
 
 You can define your own verb enums for domain-specific protocols:
@@ -331,6 +382,20 @@ Currently, SystemBus supports the basic request/response pattern through the `bi
 - **Channels**: Bi-directional communication streams between peers
 - **Path-based routing**: Similar to HTTP routers with parameter extraction
 - **Performance optimizations**: Message batching and efficient serialization
+
+## Roadmap
+
+SystemBus follows a progressive release schedule, with each minor version focusing on key features:
+
+- **0.4.0**: Standardized request/response pattern for simpler communication
+- **0.5.0**: Peer discovery mechanism for automatic service detection
+- **0.6.0**: Path-based routing with support for route parameters
+- **0.7.0**: Pub/Sub pattern for topic-based event distribution
+- **0.8.0**: Message filtering and validation capabilities
+- **0.9.0**: Performance optimizations for high-frequency communications
+- **1.0.0**: Stable API with comprehensive documentation
+
+This roadmap serves as a guide and may be adjusted based on user feedback and evolving requirements.
 
 ## License
 

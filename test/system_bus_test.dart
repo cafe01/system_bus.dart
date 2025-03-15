@@ -107,8 +107,7 @@ void main() {
 
     test('SystemBus supports custom verb enums', () async {
       // Create a bus with custom verbs
-      final customBus =
-          SystemBus(supportedVerbs: [...HttpVerb.values, ...CustomVerb.values]);
+      final customBus = SystemBus();
 
       final completer = Completer<BusPacket>();
 
