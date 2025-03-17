@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+### Fixed
+- Changed BusPacket.payload type from Map<String, dynamic>? to dynamic? to allow for different types of data to be sent through the bus system
+
 ## 0.4.0
 
 ### Added

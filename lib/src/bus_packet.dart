@@ -12,7 +12,7 @@ class BusPacket {
   final Uri uri;
 
   /// Operation parameters
-  final Map<String, dynamic>? payload;
+  final dynamic payload;
 
   /// Direct response channel
   final SendPort? responsePort;

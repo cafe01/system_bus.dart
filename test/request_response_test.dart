@@ -67,7 +67,7 @@ void main() {
 
     test('sendRequest times out when no response is received', () async {
       // Set up a service that never responds
-      final stream = bus.bindListener('timeout.service', 1);
+      bus.bindListener('timeout.service', 1);
       // Intentionally not responding to requests
 
       // Send a request with a short timeout
