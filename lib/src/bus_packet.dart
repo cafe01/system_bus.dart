@@ -11,7 +11,7 @@ class BusPacket {
   /// Target resource URI
   final Uri uri;
 
-  /// Operation parameters
+  /// Operation parameters or response data
   final dynamic payload;
 
   /// Direct response channel
@@ -23,8 +23,8 @@ class BusPacket {
   /// Whether the operation was successful (for responses)
   final bool success;
 
-  /// Result data (for responses)
-  final dynamic result;
+  /// Error code (for failed responses)
+  final dynamic errorCode;
 
   /// Error message (for failed responses)
   final String? errorMessage;
@@ -38,19 +38,19 @@ class BusPacket {
   })  : version = 1,
         isResponse = false,
         success = false,
-        result = null,
+        errorCode = null,
         errorMessage = null;
 
   /// Creates a response packet.
   BusPacket.response({
     required BusPacket request,
     required this.success,
-    this.result,
+    this.payload,
+    this.errorCode,
     this.errorMessage,
   })  : version = 1,
         verb = request.verb,
         uri = request.uri,
-        payload = null,
         responsePort = null,
         isResponse = true;
 
@@ -65,7 +65,7 @@ class BusPacket {
       if (responsePort != null) 'responsePort': responsePort,
       'isResponse': isResponse,
       'success': success,
-      if (result != null) 'result': result,
+      if (errorCode != null) 'errorCode': errorCode,
       if (errorMessage != null) 'errorMessage': errorMessage,
     }.toString();
   }

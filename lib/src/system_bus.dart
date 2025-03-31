@@ -40,7 +40,7 @@ class SystemBus {
   /// - [payload]: Optional operation parameters
   /// - [timeout]: Optional timeout duration (defaults to 30 seconds)
   ///
-  /// Returns a Future that completes with the response result or throws
+  /// Returns a Future that completes with the response payload or throws
   /// an exception if the request fails or times out.
   Future<dynamic> sendRequest({
     required Enum verb,
@@ -95,11 +95,18 @@ class SystemBus {
       // Handle response
       if (response.success) {
         _logger.fine('Request succeeded');
-        return response.result;
+        return response.payload;
       } else {
         final errorMsg = response.errorMessage ?? 'Operation failed';
-        _logger.warning('Request failed: $errorMsg');
-        throw Exception(errorMsg);
+        final errorCode = response.errorCode;
+        _logger.warning(
+            'Request failed: ${errorCode != null ? "$errorCode: " : ""}$errorMsg');
+
+        if (errorCode != null) {
+          throw Exception('$errorCode: $errorMsg');
+        } else {
+          throw Exception(errorMsg);
+        }
       }
     } catch (e, stackTrace) {
       if (e is! TimeoutException) {
@@ -118,15 +125,17 @@ class SystemBus {
   ///
   /// Parameters:
   /// - [requestPacket]: The original request packet
-  /// - [result]: The result data to send back
+  /// - [payload]: The response data to send back
   /// - [success]: Whether the operation was successful (defaults to true)
+  /// - [errorCode]: Optional error code for failed operations
   /// - [errorMessage]: Optional error message for failed operations
   ///
   /// Throws an exception if the request packet doesn't have a responsePort.
   void sendResponse(
     BusPacket requestPacket,
-    dynamic result, {
+    dynamic payload, {
     bool success = true,
+    dynamic errorCode,
     String? errorMessage,
   }) {
     if (requestPacket.responsePort == null) {
@@ -137,7 +146,8 @@ class SystemBus {
     final response = BusPacket.response(
       request: requestPacket,
       success: success,
-      result: result,
+      payload: payload,
+      errorCode: errorCode,
       errorMessage: errorMessage,
     );
 
@@ -178,10 +188,8 @@ class SystemBus {
 
       BusLogger.tracePacket(_logger, 'RECEIVED', packet);
 
-      if (uri.scheme != 'bus') {
-        _logger.warning('Invalid URI scheme: ${uri.scheme}');
-        return;
-      }
+      // The scheme is part of the application-level protocol and should be
+      // transparent to the bus layer. All URI schemes are now allowed.
 
       // Normalize host to lowercase for case-insensitive matching
       final normalizedHost = uri.host.toLowerCase();

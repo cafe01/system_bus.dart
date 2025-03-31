@@ -36,7 +36,7 @@ void main() {
 
       // Send a message to the bus
       final packet = BusPacket(
-        verb: HttpVerb.get,
+        verb: TestVerb.get,
         uri: Uri.parse('bus://test.host:123/path'),
         payload: {'key': 'value'},
       );
@@ -46,7 +46,7 @@ void main() {
       // Wait for the message to be received
       final receivedPacket = await completer.future;
 
-      expect(receivedPacket.verb, equals(HttpVerb.get));
+      expect(receivedPacket.verb, equals(TestVerb.get));
       expect(receivedPacket.uri.toString(), equals('bus://test.host:123/path'));
       expect(receivedPacket.payload, equals({'key': 'value'}));
 
@@ -66,7 +66,7 @@ void main() {
 
       // Send a message to a different host/port
       final packet = BusPacket(
-        verb: HttpVerb.get,
+        verb: TestVerb.get,
         uri: Uri.parse('bus://test.host:123/path'),
         payload: {'key': 'value'},
       );
@@ -92,7 +92,7 @@ void main() {
 
       // Send message with different case
       final packet = BusPacket(
-        verb: HttpVerb.get,
+        verb: TestVerb.get,
         uri: Uri.parse('bus://test.host:123/path'),
         payload: {'key': 'value'},
       );
@@ -139,6 +139,9 @@ void main() {
     });
   });
 }
+
+// Define test verbs
+enum TestVerb { get, post, put, delete }
 
 // Define a custom enum
 enum CustomVerb { action1, action2, action3 }

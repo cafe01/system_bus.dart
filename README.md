@@ -27,7 +27,7 @@ This approach means you can model any kind of communication pattern or domain-sp
 - **Lightweight**: Minimal dependencies and overhead
 - **Peer-agnostic**: No assumptions about communication endpoints
 - **Type-safe messaging**: Structured packet format with serialization support
-- **Flexible verb system**: Support for custom protocol verbs beyond HTTP
+- **Flexible verb system**: Support for custom protocol verbs
 - **Logging infrastructure**: Configurable logging with message tracing
 
 ## Installation
@@ -36,7 +36,7 @@ Add this package to your pubspec.yaml:
 
 ```yaml
 dependencies:
-  system_bus: ^0.1.0
+  system_bus: ^0.5.0
 ```
 
 ## Basic Usage
@@ -60,6 +60,9 @@ void main() {
 ### Binding Listeners
 
 ```dart
+// Define your own protocol verbs
+enum DeviceVerb { get, set, delete }
+
 // Bind a listener for a specific host and port
 Stream<BusPacket> deviceStream = bus.bindListener('device.type', 1);
 
@@ -68,13 +71,13 @@ deviceStream.listen((packet) {
   print('Received: ${packet.verb} ${packet.uri}');
   
   // Handle the message
-  if (packet.verb == HttpVerb.get && packet.uri.path == '/status') {
+  if (packet.verb == DeviceVerb.get && packet.uri.path == '/status') {
     // Send a response if a response port was provided
     if (packet.responsePort != null) {
       final response = BusPacket.response(
         request: packet,
         success: true,
-        result: {'status': 'online'},
+        payload: {'status': 'online'},
       );
       packet.responsePort!.send(response);
     }
@@ -87,13 +90,16 @@ deviceStream.listen((packet) {
 ```dart
 // From a peer that has the bus sendPort
 void sendMessage(SendPort busSendPort) {
+  // Define your protocol verbs
+  enum DeviceVerb { get, set, delete }
+  
   // Create a port to receive the response
   final responsePort = ReceivePort();
   
   // Create and send a message
   final packet = BusPacket(
-    verb: HttpVerb.get,
-    uri: Uri.parse('bus://device.type:1/status'),
+    verb: DeviceVerb.get,
+    uri: Uri.parse('device://device.type:1/status'),
     payload: {'detail': true},
     responsePort: responsePort.sendPort,
   );
@@ -103,59 +109,25 @@ void sendMessage(SendPort busSendPort) {
   // Listen for the response
   responsePort.listen((response) {
     // The response is a BusPacket
-    print('Got response: ${response.result}');
+    print('Got response: ${response.payload}');
     responsePort.close();
   });
 }
 ```
-
-### Using SystemBusClient
-
-For a more convenient API, you can use the `HttpSystemBusClient` which wraps the message-passing mechanics with a Future-based interface:
-
-```dart
-// Create an HTTP client with the bus send port
-final client = HttpSystemBusClient(busSendPort);
-
-// Simple GET request
-try {
-  final result = await client.get(Uri.parse('bus://device.type:1/status'));
-  print('Status: $result');
-} catch (e) {
-  print('Error: $e');
-}
-
-// POST with payload
-final createResult = await client.post(
-  Uri.parse('bus://device.type:1/resource'),
-  {'name': 'New Resource', 'priority': 'high'}
-);
-
-// Other verb methods
-await client.put(uri, payload);
-await client.delete(uri);
-await client.patch(uri, payload);
-await client.options(uri);
-```
-
-The client automatically:
-- Creates the appropriate BusPacket with the correct verb
-- Sets up a response channel
-- Handles the response and error cases
-- Returns a Future that completes with the result or error
-
-This provides a more ergonomic API for common request/response patterns compared to manually creating packets and managing response ports.
 
 ### Using Request/Response Methods
 
 SystemBus provides standardized methods for request/response communication:
 
 ```dart
+// Define your protocol verbs
+enum DeviceVerb { get, set, delete }
+
 // Client side: Send a request and await response
 try {
   final result = await bus.sendRequest(
-    verb: HttpVerb.get,
-    uri: Uri.parse('bus://device.type:1/status'),
+    verb: DeviceVerb.get,
+    uri: Uri.parse('device://device.type:1/status'),
     payload: {'detail': true},
     timeout: Duration(seconds: 10), // Optional timeout
   );
@@ -167,7 +139,7 @@ try {
 // Service side: Handle requests and send responses
 final deviceStream = bus.bindListener('device.type', 1);
 deviceStream.listen((packet) {
-  if (packet.verb == HttpVerb.get && packet.uri.path == '/status') {
+  if (packet.verb == DeviceVerb.get && packet.uri.path == '/status') {
     try {
       // Process the request
       final status = getDeviceStatus();
@@ -184,6 +156,7 @@ deviceStream.listen((packet) {
         packet,
         null,
         success: false,
+        errorCode: 'DEVICE_ERROR',
         errorMessage: 'Failed to get device status: $e',
       );
     }
@@ -247,18 +220,10 @@ enum LlmVerb {
   summarize,
 }
 
-// Create a bus that supports multiple verb types
-final bus = SystemBus(supportedVerbs: [
-  ...HttpVerb.values,
-  ...DeviceVerb.values,
-  ...CpuVerb.values,
-  // Add other verb enums as needed
-]);
-
 // Send a message with a custom verb
 final packet = BusPacket(
   verb: DeviceVerb.configure,
-  uri: Uri.parse('bus://device.manager:1/thermostat'),
+  uri: Uri.parse('device://device.manager:1/thermostat'),
   payload: {'temperature': 72, 'mode': 'auto'},
 );
 
@@ -281,10 +246,10 @@ For example, a simple device control protocol might look like:
 enum DeviceVerb { power, setMode, getStatus }
 
 // 2. Document URI patterns
-// bus://device.type:id/[device-name]
+// device://device.type:id/[device-name]
 // Examples:
-// - bus://thermostat:1/living-room
-// - bus://light:2/kitchen
+// - device://thermostat:1/living-room
+// - device://light:2/kitchen
 
 // 3. Define payload structures (in documentation or code)
 // DeviceVerb.power: { "state": "on"|"off" }
@@ -305,7 +270,7 @@ void setupDeviceHandler(SystemBus bus, String deviceType, int id) {
         final response = BusPacket.response(
           request: packet,
           success: true,
-          result: {'power': 'on', 'mode': 'heating', 'temperature': 72},
+          payload: {'power': 'on', 'mode': 'heating', 'temperature': 72},
         );
         packet.responsePort!.send(response);
       }
@@ -316,6 +281,299 @@ void setupDeviceHandler(SystemBus bus, String deviceType, int id) {
 ```
 
 This approach allows you to create clean, domain-specific APIs while leveraging the routing and message passing infrastructure of SystemBus.
+
+## Protocol Implementation Guide
+
+For more complex protocol implementations, we recommend using a client-dispatcher pattern that provides a clean separation of concerns. This section demonstrates how to implement a complete fictional SmartHome protocol following best practices.
+
+### 1. Protocol Definition
+
+Start by defining your protocol's core components - verbs, data structures, and error types:
+
+```dart
+/// SmartHome protocol verbs
+enum SmartHomeVerb {
+  power,      // Turn devices on/off
+  set,        // Set a device property (brightness, temperature, etc.)
+  get,        // Get a device property or status
+  discover,   // Discover available devices
+}
+
+/// Light state information
+class LightState {
+  final bool isPowered;
+  final int brightness;  // 0-100 percent
+  
+  LightState({required this.isPowered, required this.brightness});
+  
+  Map<String, dynamic> toJson() => {
+    'isPowered': isPowered,
+    'brightness': brightness,
+  };
+  
+  factory LightState.fromJson(Map<String, dynamic> json) {
+    return LightState(
+      isPowered: json['isPowered'] as bool,
+      brightness: json['brightness'] as int,
+    );
+  }
+}
+
+/// Exception for SmartHome-related errors
+class SmartHomeException implements Exception {
+  final String code;
+  final String message;
+
+  SmartHomeException(this.code, this.message);
+
+  @override
+  String toString() => 'SmartHomeException: [$code] $message';
+}
+```
+
+### 2. Protocol Dispatcher
+
+Create a dispatcher that handles messages on the firmware side:
+
+```dart
+/// Handler function types
+typedef PowerHandler = Future<void> Function(dynamic device, String deviceId, bool state);
+typedef SetBrightnessHandler = Future<LightState> Function(
+    dynamic device, String lightId, int brightness);
+typedef GetStatusHandler = Future<LightState> Function(dynamic device, String lightId);
+
+/// Dispatcher for SmartHome protocol messages
+class SmartHomeProtocolDispatcher {
+  final PowerHandler _powerHandler;
+  final SetBrightnessHandler _setBrightnessHandler;
+  final GetStatusHandler _getStatusHandler;
+  
+  SmartHomeProtocolDispatcher({
+    required PowerHandler powerHandler,
+    required SetBrightnessHandler setBrightnessHandler,
+    required GetStatusHandler getStatusHandler,
+  }) : _powerHandler = powerHandler,
+       _setBrightnessHandler = setBrightnessHandler,
+       _getStatusHandler = getStatusHandler;
+       
+  /// Handles incoming bus packets
+  Future<void> handlePacket(BusPacket packet, dynamic device) async {
+    final verb = packet.verb as SmartHomeVerb;
+    final uri = packet.uri;
+    final params = uri.queryParameters;
+    final responsePort = packet.responsePort;
+    
+    try {
+      // Process the packet based on verb and path
+      dynamic result;
+      final deviceId = params['id'];
+      
+      if (deviceId == null) {
+        throw SmartHomeException('MISSING_PARAMETER', 'Device ID is required');
+      }
+      
+      switch (verb) {
+        case SmartHomeVerb.power:
+          final state = params['state'] == 'on';
+          await _powerHandler(device, deviceId, state);
+          result = {'success': true};
+          break;
+          
+        case SmartHomeVerb.set:
+          if (uri.path.contains('/brightness')) {
+            final brightness = int.tryParse(params['value'] ?? '');
+            if (brightness == null) {
+              throw SmartHomeException('INVALID_PARAMETER', 'Brightness must be a number');
+            }
+            final state = await _setBrightnessHandler(device, deviceId, brightness);
+            result = state.toJson();
+          } else {
+            throw SmartHomeException('INVALID_PATH', 'Unknown set operation path: ${uri.path}');
+          }
+          break;
+          
+        case SmartHomeVerb.get:
+          if (uri.path.contains('/status')) {
+            final state = await _getStatusHandler(device, deviceId);
+            result = state.toJson();
+          } else {
+            throw SmartHomeException('INVALID_PATH', 'Unknown get operation path: ${uri.path}');
+          }
+          break;
+          
+        default:
+          throw SmartHomeException('UNSUPPORTED_OPERATION', 'Verb not supported: ${verb.name}');
+      }
+      
+      // Send success response
+      if (responsePort != null) {
+        final response = BusPacket.response(
+          request: packet,
+          success: true,
+          payload: result,
+        );
+        responsePort.send(response);
+      }
+    } catch (e) {
+      // Handle errors and send error response
+      if (responsePort != null) {
+        final errorCode = e is SmartHomeException ? e.code : 'INTERNAL_ERROR';
+        final errorMessage = e is SmartHomeException ? e.message : e.toString();
+        
+        final response = BusPacket.response(
+          request: packet,
+          success: false,
+          errorCode: errorCode,
+          errorMessage: errorMessage,
+        );
+        responsePort.send(response);
+      }
+    }
+  }
+}
+```
+
+### 3. Protocol Client
+
+Create a client that provides a clean, type-safe API for using the protocol:
+
+```dart
+/// Client for the SmartHome protocol
+class SmartHomeClient {
+  final SendPort _sendPort;
+  final String _deviceHost;
+  final int _devicePort;
+  
+  SmartHomeClient(this._sendPort, this._deviceHost, this._devicePort);
+  
+  /// Turns a light on or off
+  Future<void> setPower(String lightId, bool on) async {
+    final uri = _buildUri('/light', {'id': lightId, 'state': on ? 'on' : 'off'});
+    await _sendCommand(SmartHomeVerb.power, uri);
+  }
+  
+  /// Sets the brightness of a light
+  Future<LightState> setBrightness(String lightId, int brightness) async {
+    final uri = _buildUri('/light/brightness', {'id': lightId, 'value': brightness.toString()});
+    final response = await _sendCommand(SmartHomeVerb.set, uri);
+    return LightState.fromJson(response);
+  }
+  
+  /// Gets the current status of a light
+  Future<LightState> getLightStatus(String lightId) async {
+    final uri = _buildUri('/light/status', {'id': lightId});
+    final response = await _sendCommand(SmartHomeVerb.get, uri);
+    return LightState.fromJson(response);
+  }
+  
+  /// Builds a URI for the protocol
+  Uri _buildUri(String path, Map<String, String> queryParams) {
+    return Uri(
+      scheme: 'smarthome',
+      host: _deviceHost,
+      port: _devicePort,
+      path: path,
+      queryParameters: queryParams,
+    );
+  }
+  
+  /// Sends a command and handles the response
+  Future<dynamic> _sendCommand(SmartHomeVerb verb, Uri uri) async {
+    final replyPort = ReceivePort();
+    final completer = Completer<dynamic>();
+    
+    final packet = BusPacket(
+      verb: verb,
+      uri: uri,
+      responsePort: replyPort.sendPort,
+    );
+    
+    replyPort.listen((response) {
+      if (response is BusPacket && response.isResponse) {
+        if (response.success) {
+          completer.complete(response.payload);
+        } else {
+          completer.completeError(SmartHomeException(
+            response.errorCode?.toString() ?? 'UNKNOWN_ERROR',
+            response.errorMessage ?? 'Unknown error',
+          ));
+        }
+      } else {
+        completer.completeError(SmartHomeException(
+          'INVALID_RESPONSE',
+          'Received invalid response format',
+        ));
+      }
+      replyPort.close();
+    });
+    
+    _sendPort.send(packet);
+    return completer.future;
+  }
+}
+```
+
+### 4. Usage Example
+
+Here's how you would use this protocol:
+
+```dart
+void main() async {
+  // Create a bus
+  final bus = SystemBus();
+  
+  // Create dispatcher with handler implementations
+  final dispatcher = SmartHomeProtocolDispatcher(
+    powerHandler: (device, id, state) async {
+      print('Setting $id power to ${state ? 'on' : 'off'}');
+      // Implementation...
+    },
+    setBrightnessHandler: (device, id, brightness) async {
+      print('Setting $id brightness to $brightness');
+      // Implementation...
+      return LightState(isPowered: true, brightness: brightness);
+    },
+    getStatusHandler: (device, id) async {
+      print('Getting status for $id');
+      // Implementation...
+      return LightState(isPowered: true, brightness: 75);
+    },
+  );
+  
+  // Set up device listener
+  final stream = bus.bindListener('smarthome.lights', 1);
+  stream.listen((packet) {
+    // Pass along to dispatcher
+    dispatcher.handlePacket(packet, 'device_context');
+  });
+  
+  // Create client
+  final client = SmartHomeClient(bus.sendPort, 'smarthome.lights', 1);
+  
+  // Use the client
+  try {
+    // Turn on a light
+    await client.setPower('living_room', true);
+    
+    // Set brightness
+    final newState = await client.setBrightness('living_room', 75);
+    print('New brightness: ${newState.brightness}');
+    
+    // Get status
+    final status = await client.getLightStatus('living_room');
+    print('Light is ${status.isPowered ? 'on' : 'off'} at ${status.brightness}% brightness');
+  } catch (e) {
+    print('Error: $e');
+  }
+}
+```
+
+This pattern provides several benefits:
+1. **Clean separation of concerns**: Client, dispatcher, and protocol definition are separate
+2. **Type safety**: Protocol-specific types and enums provide compile-time checking
+3. **Error handling**: Consistent error reporting and propagation
+4. **Testability**: Each component can be tested in isolation
+5. **Code organization**: Follows a structured pattern that scales well for complex protocols
 
 ### Configuring Logging
 
@@ -344,32 +602,16 @@ class BusPacket {
   final int version;             // Protocol version (currently 1)
   final Enum verb;               // Operation verb (can be any Enum)
   final Uri uri;                 // Target resource URI
-  final Map<String, dynamic>? payload;  // Operation parameters
+  final dynamic payload;         // Operation parameters or response data
   final SendPort? responsePort;  // Direct response channel
   
   // For responses
   final bool isResponse;
   final bool success;
-  final dynamic result;
-  final String? errorMessage;
+  final dynamic errorCode;       // Error code for failed responses
+  final String? errorMessage;    // Error message for failed responses
   
   // Constructors and helper methods...
-}
-```
-
-## HttpVerb Enum
-
-The standard HTTP verb enum is provided for RESTful-style communication:
-
-```dart
-enum HttpVerb {
-  get,     // Retrieve a resource
-  post,    // Create a resource
-  put,     // Update a resource
-  delete,  // Remove a resource
-  patch,   // Partially update a resource
-  options, // Retrieve communication options
-  head,    // Check if a resource exists
 }
 ```
 
@@ -388,7 +630,7 @@ Currently, SystemBus supports the basic request/response pattern through the `bi
 SystemBus follows a progressive release schedule, with each minor version focusing on key features:
 
 - **0.4.0**: Standardized request/response pattern for simpler communication
-- **0.5.0**: Peer discovery mechanism for automatic service detection
+- **0.5.0**: Improved protocol structure and protocol-agnostic design
 - **0.6.0**: Path-based routing with support for route parameters
 - **0.7.0**: Pub/Sub pattern for topic-based event distribution
 - **0.8.0**: Message filtering and validation capabilities

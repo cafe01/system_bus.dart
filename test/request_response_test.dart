@@ -20,14 +20,14 @@ void main() {
       // Set up a service that responds to requests
       final stream = bus.bindListener('test.service', 1);
       stream.listen((packet) {
-        if (packet.verb == HttpVerb.get && packet.uri.path == '/resource') {
+        if (packet.verb == TestVerb.get && packet.uri.path == '/resource') {
           bus.sendResponse(packet, {'status': 'success', 'data': 'test-data'});
         }
       });
 
       // Send a request and wait for the response
       final result = await bus.sendRequest(
-        verb: HttpVerb.get,
+        verb: TestVerb.get,
         uri: Uri.parse('bus://test.service:1/resource'),
       );
 
@@ -41,7 +41,7 @@ void main() {
       // Set up a service that responds with an error
       final stream = bus.bindListener('error.service', 1);
       stream.listen((packet) {
-        if (packet.verb == HttpVerb.get && packet.uri.path == '/error') {
+        if (packet.verb == TestVerb.get && packet.uri.path == '/error') {
           bus.sendResponse(
             packet,
             null,
@@ -54,13 +54,44 @@ void main() {
       // Send a request and expect an exception
       expect(
         () => bus.sendRequest(
-          verb: HttpVerb.get,
+          verb: TestVerb.get,
           uri: Uri.parse('bus://error.service:1/error'),
         ),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',
           contains('Resource not found'),
+        )),
+      );
+    });
+
+    test('sendRequest handles error responses with error codes correctly',
+        () async {
+      // Set up a service that responds with an error and error code
+      final stream = bus.bindListener('error.service', 2);
+      stream.listen((packet) {
+        if (packet.verb == TestVerb.get &&
+            packet.uri.path == '/error-with-code') {
+          bus.sendResponse(
+            packet,
+            null,
+            success: false,
+            errorCode: 'NOT_FOUND',
+            errorMessage: 'Resource not found',
+          );
+        }
+      });
+
+      // Send a request and expect an exception with error code
+      expect(
+        () => bus.sendRequest(
+          verb: TestVerb.get,
+          uri: Uri.parse('bus://error.service:2/error-with-code'),
+        ),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('NOT_FOUND: Resource not found'),
         )),
       );
     });
@@ -73,7 +104,7 @@ void main() {
       // Send a request with a short timeout
       expect(
         () => bus.sendRequest(
-          verb: HttpVerb.get,
+          verb: TestVerb.get,
           uri: Uri.parse('bus://timeout.service:1/timeout'),
           timeout: Duration(milliseconds: 100),
         ),
@@ -84,7 +115,7 @@ void main() {
     test('sendResponse throws when request has no responsePort', () {
       // Create a packet without a responsePort
       final packet = BusPacket(
-        verb: HttpVerb.get,
+        verb: TestVerb.get,
         uri: Uri.parse('bus://test.service:1/resource'),
       );
 
@@ -125,7 +156,7 @@ void main() {
 
       // Test with Map payload
       var result = await bus.sendRequest(
-        verb: HttpVerb.post,
+        verb: TestVerb.post,
         uri: Uri.parse('bus://echo.service:1/echo'),
         payload: {'test': 'value', 'number': 42},
       );
@@ -133,7 +164,7 @@ void main() {
 
       // Test with non-Map payload
       result = await bus.sendRequest(
-        verb: HttpVerb.post,
+        verb: TestVerb.post,
         uri: Uri.parse('bus://echo.service:1/echo'),
         payload: 'string-payload',
       );
@@ -141,13 +172,16 @@ void main() {
 
       // Test with null payload
       result = await bus.sendRequest(
-        verb: HttpVerb.post,
+        verb: TestVerb.post,
         uri: Uri.parse('bus://echo.service:1/echo'),
       );
       expect(result['echo'], isNull);
     });
   });
 }
+
+// Define test verbs
+enum TestVerb { get, post, put, delete }
 
 // Define a custom verb for testing
 enum CustomVerb { action, query, update }

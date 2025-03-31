@@ -11,46 +11,66 @@ void main() {
       final responsePort = ReceivePort().sendPort;
 
       final packet = BusPacket(
-        verb: HttpVerb.get,
+        verb: CustomVerb.action1,
         uri: uri,
         payload: payload,
         responsePort: responsePort,
       );
 
       expect(packet.version, equals(1));
-      expect(packet.verb, equals(HttpVerb.get));
+      expect(packet.verb, equals(CustomVerb.action1));
       expect(packet.uri, equals(uri));
       expect(packet.payload, equals(payload));
       expect(packet.responsePort, equals(responsePort));
       expect(packet.isResponse, isFalse);
       expect(packet.success, isFalse);
-      expect(packet.result, isNull);
+      expect(packet.errorCode, isNull);
       expect(packet.errorMessage, isNull);
     });
 
     test('BusPacket.response constructor sets all fields correctly', () {
       final uri = Uri.parse('bus://test.host:123/path');
       final request = BusPacket(
-        verb: HttpVerb.get,
+        verb: CustomVerb.action1,
         uri: uri,
       );
 
       final response = BusPacket.response(
         request: request,
         success: true,
-        result: {'status': 'ok'},
+        payload: {'status': 'ok'},
+        errorCode: null,
         errorMessage: null,
       );
 
       expect(response.version, equals(1));
-      expect(response.verb, equals(HttpVerb.get));
+      expect(response.verb, equals(CustomVerb.action1));
       expect(response.uri, equals(uri));
-      expect(response.payload, isNull);
+      expect(response.payload, equals({'status': 'ok'}));
       expect(response.responsePort, isNull);
       expect(response.isResponse, isTrue);
       expect(response.success, isTrue);
-      expect(response.result, equals({'status': 'ok'}));
+      expect(response.errorCode, isNull);
       expect(response.errorMessage, isNull);
+    });
+
+    test('Error response includes errorCode and errorMessage', () {
+      final uri = Uri.parse('bus://test.host:123/path');
+      final request = BusPacket(
+        verb: CustomVerb.action1,
+        uri: uri,
+      );
+
+      final response = BusPacket.response(
+        request: request,
+        success: false,
+        errorCode: 'NOT_FOUND',
+        errorMessage: 'Resource not found',
+      );
+
+      expect(response.success, isFalse);
+      expect(response.errorCode, equals('NOT_FOUND'));
+      expect(response.errorMessage, equals('Resource not found'));
     });
 
     test('Custom enum verbs are supported', () {
@@ -68,5 +88,5 @@ void main() {
   });
 }
 
-// Define a custom enums
+// Define a custom enum
 enum CustomVerb { action1, action2, action3 }

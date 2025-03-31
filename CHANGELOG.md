@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.0
+
+### Breaking Changes
+- Removed `result` field from `BusPacket` and consolidated response data into `payload` field
+- Removed `SystemBusClient` and `HttpSystemBusClient` classes to reinforce protocol-agnostic design
+- Removed `HttpVerb` enum from core package (clients should define their own protocol verbs)
+
+### Added
+- Added `errorCode` field to `BusPacket` for more structured error reporting
+- Updated documentation with Protocol Implementation Guide section
+- Enhanced error reporting in `SystemBus.sendRequest()` to include error codes
+
+### Changed
+- Updated tests to reflect new packet structure and removed client-specific tests
+- Simplified architecture by removing unnecessary abstractions
+- Improved protocol-agnostic approach by eliminating HTTP-specific components
+
+## 0.4.2
+
+### Fixed
+- Removed URI scheme restriction that was preventing non-'bus' protocols from utilizing the bus architecture
+- SystemBus now routes messages based solely on host and port, without validating or restricting the URI scheme
+- Added tests to verify support for domain-specific URI schemes (e.g., 'fs://', 'net://', etc.)
+
 ## 0.4.1
 
 ### Fixed
