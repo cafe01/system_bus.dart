@@ -1,13 +1,9 @@
-import 'package:logging/logging.dart';
 import 'package:system_bus/system_bus.dart';
 
 // Define custom protocol verbs
 enum DeviceVerb { get, set, reboot, configure }
 
 void main() async {
-  // Initialize logging
-  BusLogger.init(level: Level.INFO, includeCallerInfo: true);
-
   // Create a bus instance
   final bus = SystemBus();
 

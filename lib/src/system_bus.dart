@@ -9,7 +9,7 @@ import 'bus_packet.dart';
 /// A lightweight, URI-based message broker for Dart applications.
 class SystemBus {
   /// Logger for this class
-  final Logger _logger = BusLogger.get('bus');
+  final Logger _logger = Logger('system_bus');
 
   /// Internal port for receiving messages
   final ReceivePort _receivePort = ReceivePort();
