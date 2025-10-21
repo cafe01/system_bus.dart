@@ -209,11 +209,14 @@ class SystemBus {
 
   /// Closes the bus and all associated listeners.
   void dispose() {
-    _logger.info('Disposing SystemBus');
+    _logger.fine('Disposing SystemBus');
     _receivePort.close();
+    _logger.finer('ReceivePort closed');
     for (final controller in _listeners.values) {
       controller.close();
     }
+    _logger.finer('Stream controllers closed');
     _listeners.clear();
+    _logger.fine('SystemBus disposal complete');
   }
 }
