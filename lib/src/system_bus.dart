@@ -51,7 +51,7 @@ class SystemBus {
     final responsePort = ReceivePort();
     final actualTimeout = timeout ?? defaultTimeout;
 
-    _logger.fine('Sending request: ${verb.runtimeType}.${verb.name} $uri');
+    _logger.finer('Sending request: ${verb.runtimeType}.${verb.name} $uri');
 
     try {
       // Create the request packet
@@ -73,7 +73,7 @@ class SystemBus {
 
       // Wait for response with timeout
       _logger
-          .fine('Waiting for response (timeout: ${actualTimeout.inSeconds}s)');
+          .finer('Waiting for response (timeout: ${actualTimeout.inSeconds}s)');
 
       final response = await responsePort.first.timeout(
         actualTimeout,
@@ -94,7 +94,7 @@ class SystemBus {
 
       // Handle response
       if (response.success) {
-        _logger.fine('Request succeeded');
+        _logger.finer('Request succeeded');
         return response.payload;
       } else {
         final errorMsg = response.errorMessage ?? 'Operation failed';
@@ -153,7 +153,7 @@ class SystemBus {
 
     BusLogger.tracePacket(_logger, 'SENDING', response, detail: 'Response');
     requestPacket.responsePort!.send(response);
-    _logger.fine('Response sent: ${success ? 'success' : 'failure'}');
+    _logger.finer('Response sent: ${success ? 'success' : 'failure'}');
   }
 
   /// Binds a listener to a specific host and port.

@@ -12,8 +12,8 @@ class BusLogger {
       {String? detail}) {
     if (logger.level <= Level.FINE) {
       final detailInfo = detail != null ? ' - $detail' : '';
-      logger.fine('$direction PACKET$detailInfo:');
-      logger.fine('  ${packet.toString()}');
+      logger.finer('$direction PACKET$detailInfo:');
+      logger.finer('  ${packet.toString()}');
     }
   }
 }
