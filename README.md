@@ -1,3 +1,17 @@
+> ## ⚠️ ARCHIVED
+>
+> This repository is archived. The codebase is no longer maintained.
+>
+> **What happened:** This was part of BentOS's Dart-based virtual OS stack — built before S295 (March 2026), when the insight landed that Linux already *is* the OS agents need. We were rebuilding fifty years of infrastructure in Dart. The layer collapsed — not because the work was wrong, but because it was *done*. The understanding it produced made the collapse possible.
+>
+> **BentOS is very much alive** — on Linux, as it was always meant to be:
+> - 🌐 [bentos.life](https://bentos.life)
+> - 🐙 The active BentOS stack lives in the sibling repositories of this workspace
+>
+> *"The codebase is disposable. The understanding is not."* — S295
+
+---
+
 # system_bus
 
 A lightweight, URI-based message broker for Dart applications that enables structured communication between peers.
@@ -642,4 +656,3 @@ This roadmap serves as a guide and may be adjusted based on user feedback and ev
 ## License
 
 This package is available under the MIT License.
-
